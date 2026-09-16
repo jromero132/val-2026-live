@@ -9,6 +9,24 @@ interface ElectionApiResponse {
   rosterPaverkaMandat?: {
     partiroster: RawPartyData[];
   };
+  antalValdistriktRaknade?: number;
+  antalValdistriktSomSkaRaknas?: number;
+  valdeltagande?: string;
+  valdeltagandeForegaendeVal?: string;
+  totaltAntalRoster?: string;
+  totaltAntalRosterForegaendeVal?: string;
+  senasteRapporteringstid?: string;
+  senasteUppdateringstid?: string;
+}
+
+interface ElectionMeta {
+  districtsCounted: number;
+  districtsTotal: number;
+  turnout: number;
+  turnoutPrevious: number;
+  totalVotes: number;
+  totalVotesPrevious: number;
+  latestReportTime: string | null;
 }
 
 interface PartyResult {
@@ -69,6 +87,13 @@ const convertPartyName = (name: string): string => {
 
 const formatNum = (num: number): string => num.toLocaleString("sv-SE").replace(/\s/g, "·");
 
+const parseSwedishNumber = (value: string | undefined): number => {
+  if (!value) return 0;
+  const cleaned = value.replace(/%/g, "").replace(/[\s\u00a0]/g, "").replace(",", ".");
+  const parsed = Number.parseFloat(cleaned);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
 export default function App() {
   const [results, setResults] = useState<PartyResult[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -76,6 +101,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [hoveredParty, setHoveredParty] = useState<PartyResult | null>(null);
   const [hoveredAlliance, setHoveredAlliance] = useState<AllianceResult | null>(null);
+  const [meta, setMeta] = useState<ElectionMeta | null>(null);
 
   const fetchData = async () => {
     try {
@@ -99,6 +125,15 @@ export default function App() {
       });
 
       setResults(parsed);
+      setMeta({
+        districtsCounted: data.antalValdistriktRaknade ?? 0,
+        districtsTotal: data.antalValdistriktSomSkaRaknas ?? 0,
+        turnout: parseSwedishNumber(data.valdeltagande),
+        turnoutPrevious: parseSwedishNumber(data.valdeltagandeForegaendeVal),
+        totalVotes: parseSwedishNumber(data.totaltAntalRoster),
+        totalVotesPrevious: parseSwedishNumber(data.totaltAntalRosterForegaendeVal),
+        latestReportTime: data.senasteRapporteringstid ?? null,
+      });
       setLastUpdated(new Date());
       setError(null);
     } catch (err: unknown) {
@@ -236,7 +271,7 @@ export default function App() {
           </div>
 
           <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-black z-10 opacity-80 pointer-events-none" />
-          <div className="absolute left-1/2 -translate-x-1/2 -top-1 bg-black text-white text-[10px] px-1 rounded z-20 font-mono pointer-events-none">
+          <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-black text-white text-[10px] px-1 rounded z-20 font-mono pointer-events-none">
             50%
           </div>
         </div>
@@ -283,12 +318,90 @@ export default function App() {
             >
               {tidoNewPct >= 8 && `${tidoNewPct.toFixed(1)}%`}
             </div>
+
+            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-black z-10 opacity-80 pointer-events-none" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 bg-black text-white text-[10px] px-1 rounded z-20 font-mono pointer-events-none">
+              50%
+            </div>
           </div>
           <p className="text-[11px] text-gray-400">
             Visar andelen av alla positiva förändringar sedan föregående mätning.
           </p>
         </div>
       </section>
+
+      {meta && (
+        <section className="bg-white p-6 rounded-xl shadow-md border border-gray-100 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-700">Valstatistik</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+              <p className="text-xs text-gray-500">Valdeltagande</p>
+              <p className="text-xl font-bold text-gray-800">
+                {meta.turnout.toLocaleString("sv-SE", { minimumFractionDigits: 1 })}%
+              </p>
+              <p
+                className={`text-xs font-semibold ${
+                  meta.turnout - meta.turnoutPrevious >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {meta.turnout - meta.turnoutPrevious >= 0 ? "+" : ""}
+                {(meta.turnout - meta.turnoutPrevious).toLocaleString("sv-SE", {
+                  minimumFractionDigits: 1,
+                })}
+                {" "}
+                jämfört med {meta.turnoutPrevious.toLocaleString("sv-SE", {
+                  minimumFractionDigits: 1,
+                })}% (2022)
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+              <p className="text-xs text-gray-500">Räknade valdistrikt</p>
+              <p className="text-xl font-bold text-gray-800">
+                {formatNum(meta.districtsCounted)} / {formatNum(meta.districtsTotal)}
+              </p>
+              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-500"
+                  style={{
+                    width: `${
+                      meta.districtsTotal > 0
+                        ? (meta.districtsCounted / meta.districtsTotal) * 100
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {meta.districtsTotal > 0
+                  ? ((meta.districtsCounted / meta.districtsTotal) * 100).toFixed(1)
+                  : "0.0"}
+                % räknat
+              </p>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+              <p className="text-xs text-gray-500">Totalt antal röster</p>
+              <p className="text-xl font-bold text-gray-800">{formatNum(meta.totalVotes)}</p>
+              <p
+                className={`text-xs font-semibold ${
+                  meta.totalVotes - meta.totalVotesPrevious >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {meta.totalVotes - meta.totalVotesPrevious >= 0 ? "+" : ""}
+                {formatNum(meta.totalVotes - meta.totalVotesPrevious)} mot 2022
+              </p>
+            </div>
+          </div>
+
+          {meta.latestReportTime && (
+            <p className="text-xs text-gray-400 text-center">
+              Senaste rapportering: {meta.latestReportTime}
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="bg-white p-6 rounded-xl shadow-md border border-gray-100 space-y-3">
         <div className="flex justify-between items-center">
