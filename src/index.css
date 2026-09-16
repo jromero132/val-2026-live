@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #374151;
+  background: #f8fafc;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+.app-shell {
+  min-width: 0;
+}
+
+.result-name {
+  min-width: 0;
+}
+
+.result-name > span {
+  overflow-wrap: anywhere;
+}
+
+.result-values {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 1rem;
+  }
+
+  .app-shell > header h1 {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+
+  .block-labels {
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .block-labels > div {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .block-labels > div:nth-child(2) {
+    text-align: center;
+  }
+
+  .block-labels > div:last-child {
+    text-align: right;
+  }
+
+  .result-row {
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .result-name {
+    flex: 1 1 100%;
+  }
+
+  .result-name .text-xs {
+    display: block;
+    margin: 0.2rem 0 0;
+    line-height: 1.4;
+  }
+
+  .result-values {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .relative-diff {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  .diff-value {
+    width: auto;
+  }
+}
